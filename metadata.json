@@ -1,0 +1,5 @@
+{
+  "name": "Infinite Stairs AI (무한의 계단)",
+  "description": "A fast-paced arcade game where you climb an infinite staircase. Features AI-generated commentary on your performance.",
+  "requestFramePermissions": []
+}
