@@ -3,7 +3,8 @@ import { COLORS, GAME_CONFIG } from '../constants';
 import { Direction, GameState, Player, PlayerState, Stair } from '../types';
 import { StairRenderer } from './StairRenderer';
 import { generateGameOverMessage } from '../services/geminiService';
-import { Trophy, Timer, Repeat, Play } from 'lucide-react';
+import { Trophy, Timer, Repeat, Play, Volume2, VolumeX } from 'lucide-react';
+import { AudioController } from '../utils/audio';
 
 export const GameContainer: React.FC = () => {
   // State
@@ -20,12 +21,33 @@ export const GameContainer: React.FC = () => {
   });
   const [gameOverMsg, setGameOverMsg] = useState<string>("");
   const [isLoadingMsg, setIsLoadingMsg] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
-  // Refs for loops
+  // Refs
   const timerRef = useRef<number | null>(null);
+  const audioRef = useRef<AudioController | null>(null);
+
+  // Initialize Audio Controller once
+  useEffect(() => {
+    audioRef.current = new AudioController();
+    return () => {
+      audioRef.current?.stopBGM();
+    };
+  }, []);
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      const muted = audioRef.current.toggleMute();
+      setIsMuted(muted);
+    }
+  };
   
   // Initialize Game
   const initGame = useCallback(() => {
+    // Initialize audio context on user interaction
+    audioRef.current?.init();
+    audioRef.current?.startBGM();
+
     // Generate initial stairs with proper logic
     const properStairs = generateInitialStairs();
     
@@ -136,6 +158,9 @@ export const GameContainer: React.FC = () => {
     setGameState(GameState.GAME_OVER);
     if (timerRef.current) clearInterval(timerRef.current);
     
+    audioRef.current?.stopBGM();
+    audioRef.current?.playGameOver();
+
     if (score > bestScore) {
       setBestScore(score);
       localStorage.setItem('infiniteStairs_best', score.toString());
@@ -151,7 +176,7 @@ export const GameContainer: React.FC = () => {
   // Input Logic
   const handleInput = (action: 'CLIMB' | 'TURN') => {
     if (gameState !== GameState.PLAYING) return;
-
+    
     // Optimization: Direct access since indices match IDs
     const currentStair = stairs[player.currentStepIndex];
     const nextStair = stairs[player.currentStepIndex + 1];
@@ -186,6 +211,13 @@ export const GameContainer: React.FC = () => {
       const newScore = score + 1;
       setScore(newScore);
       
+      // Play sound
+      if (action === 'CLIMB') {
+        audioRef.current?.playStep();
+      } else {
+        audioRef.current?.playTurn();
+      }
+
       // Add Time
       setTimeLeft(prev => Math.min(GAME_CONFIG.MAX_TIME, prev + GAME_CONFIG.TIME_BONUS));
 
@@ -253,7 +285,15 @@ export const GameContainer: React.FC = () => {
           <span className="text-5xl font-black tracking-tighter drop-shadow-lg">{score}</span>
         </div>
 
-        <div className="w-16"></div> {/* Spacer for balance */}
+        {/* Volume Toggle */}
+        <div className="w-16 flex justify-end pointer-events-auto">
+          <button 
+            onClick={toggleMute}
+            className="p-2 bg-black/30 backdrop-blur rounded-full hover:bg-black/50 transition-colors"
+          >
+            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* --- TIMER BAR --- */}
