@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Direction, Stair, Player } from '../types';
 import { COLORS, GAME_CONFIG } from '../constants';
 
@@ -7,7 +7,17 @@ interface StairRendererProps {
   player: Player;
 }
 
+// Simple pixel art character SVG Data URI (Yellow figure)
+// Used as a fallback if 1.png is not found
+const FALLBACK_CHAR_IMG = `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 18' shape-rendering='crispEdges'%3E%3Cpath d='M4 0h6v2H4zM2 2h10v6H2zM4 8h6v4H4zM2 12h4v6H2zM8 12h4v6H8z' fill='%23fbbf24'/%3E%3Cpath d='M4 3h2v2H4zM8 3h2v2H8z' fill='%23000'/%3E%3C/svg%3E`;
+
 export const StairRenderer: React.FC<StairRendererProps> = ({ stairs, player }) => {
+  // State to handle image source. Defaults to requested '1.png'
+  const [imgSrc, setImgSrc] = useState("1.png");
+
+  // If player skin changes or component remounts, try 1.png again (unless we know it failed)
+  // but simple error handling is enough for this scope.
+
   // Guard against empty stairs (initial render before game start)
   if (!stairs || stairs.length === 0) {
     return null;
@@ -88,25 +98,31 @@ export const StairRenderer: React.FC<StairRendererProps> = ({ stairs, player }) 
             style={{
                 left: `${playerStair.x}px`,
                 bottom: `${playerStair.y}px`,
+                // Assuming the image faces RIGHT by default.
                 transform: `translateX(-50%) scaleX(${player.facing === Direction.RIGHT ? 1 : -1})`,
-                width: '40px',
-                height: '60px',
+                width: '70px',
+                height: '90px',
             }}
         >
              {/* Inner wrapper for bounce animation and fine-tuning vertical sit position */}
-             <div className="w-full h-full relative animate-bounce-short" style={{ bottom: '38px' }}>
-                  {/* Character Body Parts */}
-                  {/* Head */}
-                  <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-5 h-5 ${COLORS.player} rounded-sm border-2 border-black`}>
-                     <div className="absolute top-1 left-0 w-full h-1 bg-red-500"></div>
-                  </div>
-                  {/* Torso */}
-                  <div className={`absolute top-5 left-1/2 -translate-x-1/2 w-6 h-6 bg-blue-500 rounded-sm border-2 border-black`}></div>
-                  {/* Legs */}
-                  <div className="absolute top-11 left-2 w-2 h-4 bg-black"></div>
-                  <div className="absolute top-11 right-2 w-2 h-4 bg-black"></div>
-                  {/* Arm (Swinging) */}
-                  <div className={`absolute top-6 -left-1 w-2 h-4 ${COLORS.player} rounded-full origin-top animate-swing`}></div>
+             {/* bottom: 40px ensures the feet (bottom of image) align with the top of the current stair (height 40px) */}
+             <div className="w-full h-full relative animate-bounce-short" style={{ bottom: '40px' }}>
+                  <img 
+                    src={imgSrc}
+                    alt="Player" 
+                    className="w-full h-full object-contain"
+                    style={{ 
+                      imageRendering: 'pixelated',
+                      filter: 'drop-shadow(0 4px 2px rgba(0,0,0,0.3))'
+                    }}
+                    onError={() => {
+                      // If 1.png fails to load, switch to the internal fallback SVG
+                      if (imgSrc !== FALLBACK_CHAR_IMG) {
+                        console.warn("1.png not found, switching to fallback character.");
+                        setImgSrc(FALLBACK_CHAR_IMG);
+                      }
+                    }}
+                  />
              </div>
         </div>
 
