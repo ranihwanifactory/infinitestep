@@ -2,19 +2,43 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Infinite Stairs AI</title>
-    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>무한의 계단 AI - Infinite Stairs</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="AI가 해설해주는 무한의 계단 게임! 끊임없이 계단을 오르며 당신의 한계에 도전하세요. 빠른 속도감과 레트로 픽셀 아트 스타일의 아케이드 게임입니다." />
+    <meta name="keywords" content="무한의 계단, Infinite Stairs, 아케이드 게임, HTML5 게임, 웹게임, 무료 게임, 픽셀 아트, AI 게임" />
+    <meta name="author" content="Infinite Stairs AI" />
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Open Graph / Facebook / KakaoTalk -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://infinite-stairs-ai.com/" />
+    <meta property="og:title" content="무한의 계단 AI (Infinite Stairs)" />
+    <meta property="og:description" content="지금 바로 도전하세요! AI 코치가 당신의 기록을 분석합니다." />
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/2997/2997195.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="무한의 계단 AI" />
+    <meta property="twitter:description" content="끊임없이 오르는 아케이드 액션! 최고 기록에 도전하세요." />
+    <meta property="twitter:image" content="https://cdn-icons-png.flaticon.com/512/2997/2997195.png" />
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="canonical" href="https://infinite-stairs-ai.com/" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
         touch-action: manipulation;
         overflow: hidden;
         background-color: #1a1a1a;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        -webkit-tap-highlight-color: transparent;
       }
-      /* Retro pixel art font feel could be added here, but sticking to system fonts for reliability */
       .pixel-corners {
         clip-path: polygon(
           0px 4px, 4px 4px, 4px 0px, 
@@ -24,18 +48,38 @@
         );
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    
+    <!-- JSON-LD Structured Data for Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Infinite Stairs AI",
+      "alternateName": "무한의 계단 AI",
+      "operatingSystem": "Any",
+      "applicationCategory": "GameApplication",
+      "genre": "Arcade",
+      "description": "A fast-paced arcade game where you climb an infinite staircase with AI commentary.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+      }
+    }
+    </script>
+  <link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>

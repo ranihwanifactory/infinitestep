@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { COLORS, GAME_CONFIG, CHARACTER_SKINS } from '../constants';
 import { Direction, GameState, Player, PlayerState, Stair } from '../types';
@@ -6,6 +5,7 @@ import { StairRenderer } from './StairRenderer';
 import { generateGameOverMessage } from '../services/geminiService';
 import { Trophy, Timer, Repeat, Play, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AudioController } from '../utils/audio';
+import { InstallPrompt } from './InstallPrompt';
 
 export const GameContainer: React.FC = () => {
   // State
@@ -117,7 +117,7 @@ export const GameContainer: React.FC = () => {
     const secondLastStair = currentStairs[currentStairs.length - 2];
     
     // Determine current flow
-    const currentFlow = lastStair.x > secondLastStair.x ? Direction.RIGHT : Direction.LEFT;
+    const currentFlow = lastStair.x > secondLastStair.x ? Direction.RIGHT : Direction.LEFT; 
     let nextFlow = currentFlow;
 
     // Randomly switch direction (zig-zag logic)
@@ -280,7 +280,6 @@ export const GameContainer: React.FC = () => {
       if (next < 0) next = CHARACTER_SKINS.length - 1;
       if (next >= CHARACTER_SKINS.length) next = 0;
       
-      // Update player preview if we were showing it in menu (not strictly needed since menu shows separate UI, but consistent)
       return next;
     });
   };
@@ -340,7 +339,7 @@ export const GameContainer: React.FC = () => {
           <p className="text-slate-400 mb-6 font-medium">무한의 계단 AI 에디션</p>
 
           {/* Character Selector */}
-          <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="mb-6 flex flex-col items-center gap-3">
              <div className="text-slate-300 text-sm font-bold tracking-wider uppercase">Character Select</div>
              <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm">
                 <button 
@@ -360,7 +359,6 @@ export const GameContainer: React.FC = () => {
                            style={{ imageRendering: 'pixelated' }}
                            alt="Character Preview"
                            onError={(e) => {
-                             // Fallback preview in menu
                              if (CHARACTER_SKINS[selectedSkinIndex].id === 'custom') {
                                e.currentTarget.src = CHARACTER_SKINS[0].src;
                              }
@@ -381,18 +379,23 @@ export const GameContainer: React.FC = () => {
              </div>
           </div>
           
-          <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-xs w-full shadow-2xl">
-            <div className="flex justify-between items-center mb-4 text-sm text-slate-300 font-medium">
-              <span>⬅️ 방향전환 (Z)</span>
-              <span>오르기 (X) ➡️</span>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-4 text-sm text-slate-300 font-medium">
+                <span>⬅️ 방향전환 (Z)</span>
+                <span>오르기 (X) ➡️</span>
+              </div>
+              <button 
+                onClick={initGame}
+                className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-xl transition-transform active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Play size={24} fill="black" />
+                게임 시작
+              </button>
             </div>
-            <button 
-              onClick={initGame}
-              className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-xl transition-transform active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Play size={24} fill="black" />
-              게임 시작
-            </button>
+            
+            {/* Install App Prompt */}
+            <InstallPrompt />
           </div>
         </div>
       )}
