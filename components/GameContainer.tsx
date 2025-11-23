@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { COLORS, GAME_CONFIG, CHARACTER_SKINS } from '../constants';
+import { COLORS, GAME_CONFIG } from '../constants';
 import { Direction, GameState, Player, PlayerState, Stair } from '../types';
 import { StairRenderer } from './StairRenderer';
 import { generateGameOverMessage } from '../services/geminiService';
-import { Trophy, Timer, Repeat, Play, Volume2, VolumeX, ChevronLeft, ChevronRight } from 'lucide-react';
-import { AudioController } from '../utils/audio';
+import { Trophy, Timer, Repeat, Play } from 'lucide-react';
 
 export const GameContainer: React.FC = () => {
   // State
@@ -13,53 +12,20 @@ export const GameContainer: React.FC = () => {
   const [bestScore, setBestScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_CONFIG.INITIAL_TIME);
   const [stairs, setStairs] = useState<Stair[]>([]);
-  
-  // Skin Selection State
-  const [selectedSkinIndex, setSelectedSkinIndex] = useState(0);
-
   const [player, setPlayer] = useState<Player>({
     currentStepIndex: 0,
     facing: Direction.RIGHT,
     state: PlayerState.IDLE,
-    skin: CHARACTER_SKINS[0].id
+    skin: 'default'
   });
   const [gameOverMsg, setGameOverMsg] = useState<string>("");
   const [isLoadingMsg, setIsLoadingMsg] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
 
-  // Refs
+  // Refs for loops
   const timerRef = useRef<number | null>(null);
-  const audioRef = useRef<AudioController | null>(null);
-
-  // Initialize Audio Controller instance (lightweight)
-  useEffect(() => {
-    audioRef.current = new AudioController();
-    return () => {
-      audioRef.current?.stopBGM();
-    };
-  }, []);
-
-  const toggleMute = () => {
-    if (audioRef.current) {
-      // Ensure audio context is created/resumed on user interaction
-      audioRef.current.init();
-      
-      const muted = audioRef.current.toggleMute();
-      setIsMuted(muted);
-      
-      // Restart BGM if we are playing and just unmuted
-      if (!muted && gameState === GameState.PLAYING) {
-        audioRef.current.startBGM();
-      }
-    }
-  };
   
   // Initialize Game
   const initGame = useCallback(() => {
-    // Initialize audio context on user interaction
-    audioRef.current?.init();
-    audioRef.current?.startBGM();
-
     // Generate initial stairs with proper logic
     const properStairs = generateInitialStairs();
     
@@ -69,13 +35,13 @@ export const GameContainer: React.FC = () => {
       // Determine initial facing based on where the second step is relative to the first
       facing: properStairs[1].x > properStairs[0].x ? Direction.RIGHT : Direction.LEFT,
       state: PlayerState.IDLE,
-      skin: CHARACTER_SKINS[selectedSkinIndex].id
+      skin: 'default'
     });
     setScore(0);
     setTimeLeft(GAME_CONFIG.MAX_TIME);
     setGameState(GameState.PLAYING);
     setGameOverMsg("");
-  }, [selectedSkinIndex]);
+  }, []);
 
   // Stair Generation Logic
   const generateInitialStairs = (): Stair[] => {
@@ -170,9 +136,6 @@ export const GameContainer: React.FC = () => {
     setGameState(GameState.GAME_OVER);
     if (timerRef.current) clearInterval(timerRef.current);
     
-    audioRef.current?.stopBGM();
-    audioRef.current?.playGameOver();
-
     if (score > bestScore) {
       setBestScore(score);
       localStorage.setItem('infiniteStairs_best', score.toString());
@@ -188,23 +151,30 @@ export const GameContainer: React.FC = () => {
   // Input Logic
   const handleInput = (action: 'CLIMB' | 'TURN') => {
     if (gameState !== GameState.PLAYING) return;
-    
+
     // Optimization: Direct access since indices match IDs
     const currentStair = stairs[player.currentStepIndex];
     const nextStair = stairs[player.currentStepIndex + 1];
 
     if (!currentStair || !nextStair) return;
 
+    // Determine the direction required to reach the next stair
+    // Visually: if next.x > current.x, we need to be facing RIGHT.
+    // if next.x < current.x, we need to be facing LEFT.
     const requiredFacing = nextStair.x > currentStair.x ? Direction.RIGHT : Direction.LEFT;
 
     let newFacing = player.facing;
     let correctMove = false;
 
     if (action === 'CLIMB') {
+      // CLIMB means: Move forward in CURRENT direction.
+      // So requiredFacing must match current facing.
       if (player.facing === requiredFacing) {
         correctMove = true;
       }
     } else if (action === 'TURN') {
+      // TURN means: Switch direction, THEN move forward.
+      // So requiredFacing must be OPPOSITE to current facing.
       if (player.facing !== requiredFacing) {
         newFacing = requiredFacing;
         correctMove = true;
@@ -212,17 +182,14 @@ export const GameContainer: React.FC = () => {
     }
 
     if (correctMove) {
+      // Success
       const newScore = score + 1;
       setScore(newScore);
       
-      if (action === 'CLIMB') {
-        audioRef.current?.playStep();
-      } else {
-        audioRef.current?.playTurn();
-      }
-
+      // Add Time
       setTimeLeft(prev => Math.min(GAME_CONFIG.MAX_TIME, prev + GAME_CONFIG.TIME_BONUS));
 
+      // Update Player
       setPlayer({
         ...player,
         currentStepIndex: player.currentStepIndex + 1,
@@ -230,9 +197,11 @@ export const GameContainer: React.FC = () => {
         state: PlayerState.CLIMBING
       });
 
+      // Generate new stairs ahead
       setStairs(prev => [...prev, addNextStair(prev)]);
 
     } else {
+      // Failure
       handleGameOver();
     }
   };
@@ -243,14 +212,6 @@ export const GameContainer: React.FC = () => {
       if (gameState === GameState.MENU || gameState === GameState.GAME_OVER) {
         if (e.code === 'Space' || e.code === 'Enter') {
           initGame();
-        }
-        // Character selection with keys in Menu
-        if (gameState === GameState.MENU) {
-           if (e.key === 'ArrowLeft') {
-             changeSkin(-1);
-           } else if (e.key === 'ArrowRight') {
-             changeSkin(1);
-           }
         }
         return;
       }
@@ -264,25 +225,13 @@ export const GameContainer: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, player, stairs, score, selectedSkinIndex]);
+  }, [gameState, player, stairs, score]);
 
   // Initial Load Best Score
   useEffect(() => {
     const saved = localStorage.getItem('infiniteStairs_best');
     if (saved) setBestScore(parseInt(saved));
   }, []);
-
-  // Skin Selection Helper
-  const changeSkin = (delta: number) => {
-    setSelectedSkinIndex(prev => {
-      let next = prev + delta;
-      if (next < 0) next = CHARACTER_SKINS.length - 1;
-      if (next >= CHARACTER_SKINS.length) next = 0;
-      
-      // Update player preview if we were showing it in menu (not strictly needed since menu shows separate UI, but consistent)
-      return next;
-    });
-  };
 
 
   // --- RENDER ---
@@ -304,15 +253,7 @@ export const GameContainer: React.FC = () => {
           <span className="text-5xl font-black tracking-tighter drop-shadow-lg">{score}</span>
         </div>
 
-        {/* Volume Toggle */}
-        <div className="w-16 flex justify-end pointer-events-auto">
-          <button 
-            onClick={toggleMute}
-            className="p-2 bg-black/30 backdrop-blur rounded-full hover:bg-black/50 transition-colors"
-          >
-            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
-          </button>
-        </div>
+        <div className="w-16"></div> {/* Spacer for balance */}
       </div>
 
       {/* --- TIMER BAR --- */}
@@ -336,47 +277,7 @@ export const GameContainer: React.FC = () => {
           <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2 drop-shadow-sm">
             INFINITE STAIRS
           </h1>
-          <p className="text-slate-400 mb-6 font-medium">무한의 계단 AI 에디션</p>
-
-          {/* Character Selector */}
-          <div className="mb-8 flex flex-col items-center gap-3">
-             <div className="text-slate-300 text-sm font-bold tracking-wider uppercase">Character Select</div>
-             <div className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700 backdrop-blur-sm">
-                <button 
-                  onClick={() => changeSkin(-1)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  <ChevronLeft className="text-white" />
-                </button>
-                
-                <div className="flex flex-col items-center w-32">
-                    <div className="w-16 h-20 mb-2 relative">
-                         <img 
-                           src={CHARACTER_SKINS[selectedSkinIndex].src} 
-                           className="w-full h-full object-contain" 
-                           style={{ imageRendering: 'pixelated' }}
-                           alt="Character Preview"
-                           onError={(e) => {
-                             // Fallback preview in menu
-                             if (CHARACTER_SKINS[selectedSkinIndex].id === 'custom') {
-                               e.currentTarget.src = CHARACTER_SKINS[0].src;
-                             }
-                           }}
-                         />
-                    </div>
-                    <div className="text-white font-bold text-sm whitespace-nowrap">
-                      {CHARACTER_SKINS[selectedSkinIndex].name}
-                    </div>
-                </div>
-
-                <button 
-                  onClick={() => changeSkin(1)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                >
-                  <ChevronRight className="text-white" />
-                </button>
-             </div>
-          </div>
+          <p className="text-slate-400 mb-8 font-medium">무한의 계단 AI 에디션</p>
           
           <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-xs w-full shadow-2xl">
             <div className="flex justify-between items-center mb-4 text-sm text-slate-300 font-medium">
