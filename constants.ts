@@ -21,7 +21,9 @@ export const COLORS = {
 // --- Character Assets ---
 
 const BASE_SVG_START = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 18' shape-rendering='crispEdges'%3E";
-const BASE_SVG_END = "%3Cpath d='M4 3h2v2H4zM8 3h2v2H8z' fill='%23000'/%3E%3C/svg%3E";
+// Eyes shifted to the right (x=7 and x=10) to create a profile view. 
+// When flipped horizontally via CSS, they will look Left.
+const BASE_SVG_END = "%3Cpath d='M7 3h2v2H7zM10 3h2v2H10z' fill='%23000'/%3E%3C/svg%3E";
 
 // Helper to generate colored SVG
 const createCharSvg = (color: string) => 
